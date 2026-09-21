@@ -38,7 +38,14 @@ with open(LABEL_MAP_PATH, 'r', encoding='utf-8') as f:
 inv_label_map = {v: k for k, v in label_map.items()}
 print(f"[OK] Loaded label map with {len(inv_label_map)} classes.")
 
-mp_holistic = mp.solutions.holistic
+try:
+    import mediapipe.python.solutions.holistic as mp_holistic
+except Exception:
+    try:
+        mp_holistic = mp.solutions.holistic
+    except Exception:
+        import mediapipe.solutions.holistic as mp_holistic
+
 holistic = mp_holistic.Holistic(
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5
