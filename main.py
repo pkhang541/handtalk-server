@@ -1,9 +1,11 @@
 import os
 os.environ['KERAS_BACKEND'] = 'tensorflow'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 
 import sys
+import gc
 import json
 import time
 import numpy as np
@@ -18,6 +20,13 @@ if sys.platform == "win32":
         pass
 
 import tensorflow as tf
+try:
+    tf.config.set_visible_devices([], 'GPU')
+    tf.config.threading.set_inter_op_parallelism_threads(1)
+    tf.config.threading.set_intra_op_parallelism_threads(1)
+except Exception:
+    pass
+
 import keras
 import mediapipe as mp
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -31,6 +40,7 @@ if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
 
 model = keras.models.load_model(MODEL_PATH)
+gc.collect()
 print("[OK] Keras model loaded successfully!")
 
 with open(LABEL_MAP_PATH, 'r', encoding='utf-8') as f:
@@ -48,7 +58,8 @@ except Exception:
 
 holistic = mp_holistic.Holistic(
     min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
+    min_tracking_confidence=0.5,
+    model_complexity=0
 )
 
 N_UPPER_BODY_POSE_LANDMARKS = 25
@@ -219,6 +230,7 @@ async def handle_websocket(websocket: WebSocket):
                 accumulated_kps = []
                 is_signing = False
                 still_count = 0
+                gc.collect()
 
     except WebSocketDisconnect:
         print("📲 Android Client disconnected from photienanh VSL Server")
