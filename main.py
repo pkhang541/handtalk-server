@@ -56,16 +56,24 @@ except Exception:
     except Exception:
         import mediapipe.solutions.holistic as mp_holistic
 
+# Low-memory lightweight Holistic configuration
 holistic = mp_holistic.Holistic(
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5,
-    model_complexity=0
+    model_complexity=0,
+    smooth_landmarks=False,
+    enable_segmentation=False,
+    refine_face_landmarks=False
 )
 
 N_UPPER_BODY_POSE_LANDMARKS = 25
 N_HAND_LANDMARKS = 21
 
 def mediapipe_detection(image, holistic_model):
+    # Resize frame to 256x256 to drastically reduce RAM & CPU usage
+    h, w = image.shape[:2]
+    if h > 256 or w > 256:
+        image = cv2.resize(image, (256, 256), interpolation=cv2.INTER_NEAREST)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image_rgb.flags.writeable = False
     results = holistic_model.process(image_rgb)
